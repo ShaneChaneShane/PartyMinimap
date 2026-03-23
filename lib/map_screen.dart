@@ -1,4 +1,5 @@
 // https://www.geeksforgeeks.org/flutter/integrating-maps-and-geolocation-services-flutter/
+// https://medium.com/@nacaryusuf/usage-google-maps-geolocator-in-flutter-db601b2f5a26
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -27,6 +28,7 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _currentlocation = position;
     });
+    print(_currentlocation.toString());
   }
 
   Future<Position> _determinePosition() async {
@@ -60,14 +62,20 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       body: FlutterMap(
         mapController: _mapController,
-        options: MapOptions(initialZoom: 13.0),
+        options: MapOptions(
+          initialZoom: 13.0,
+          initialCenter: LatLng(
+            _currentlocation!.latitude,
+            _currentlocation!.longitude,
+          ),
+        ),
         children: _currentlocation != null
             ? [
                 TileLayer(
-                  urlTemplate:
-                      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                  urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                   subdomains: ['a', 'b', 'c'],
-                  userAgentPackageName: "party_minimap/0.0(contact: wannasut.chane@gmail.com)",                  
+                  userAgentPackageName:
+                      "party_minimap/0.0(contact: wannasut.chane@gmail.com)",
                 ),
                 MarkerLayer(
                   markers: [
@@ -76,7 +84,7 @@ class _MapScreenState extends State<MapScreen> {
                       height: 80.0,
                       point: LatLng(
                         _currentlocation!.latitude,
-                        _currentlocation!.latitude,
+                        _currentlocation!.longitude,
                       ),
                       child: Icon(
                         Icons.location_on,
@@ -86,6 +94,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ],
                 ),
+                Center(child: Text(_currentlocation.toString())),
               ]
             : [Text('No location data')],
       ),
