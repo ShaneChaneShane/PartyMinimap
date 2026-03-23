@@ -65,8 +65,9 @@ class _MapScreenState extends State<MapScreen> {
             ? [
                 TileLayer(
                   urlTemplate:
-                      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                   subdomains: ['a', 'b', 'c'],
+                  userAgentPackageName: "party_minimap/0.0(contact: wannasut.chane@gmail.com)",                  
                 ),
                 MarkerLayer(
                   markers: [
