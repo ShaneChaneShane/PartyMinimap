@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'map_screen.dart';
 // reference code materials
 // https://pub.dev/packages/geolocator
 // https://www.dhiwise.com/post/maximizing-user-experience-integrating-flutter-geolocator
@@ -15,11 +16,14 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: LocationDisplayWidget()
+      // home: LocationDisplayWidget()
+      home: MapScreen()
     );
   }
 }
 
+
+// ---- test ----
 class LocationDisplayWidget extends StatefulWidget {
   const LocationDisplayWidget({super.key});
 
@@ -58,7 +62,7 @@ class _LocationDisplayState extends State<LocationDisplayWidget> {
       );
     } // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
-    return await Geolocator.getCurrentPosition();
+    return await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: LocationAccuracy.best));
   }
 
   @override
