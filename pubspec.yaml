@@ -1,6 +1,6 @@
 name: party_minimap
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0+1
 
 environment:
@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_dotenv: ^6.0.1
+  map_location_picker: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -17,3 +19,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env
+
+dependency_overrides:
+  retrofit: 4.8.0
