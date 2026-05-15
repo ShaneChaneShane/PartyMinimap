@@ -1,3 +1,7 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
+val mapApiKey: String = gradleLocalProperties(rootDir, providers).getProperty("MAP_API_KEY", "")
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -7,7 +11,7 @@ plugins {
 
 android {
     namespace = "com.example.party_minimap"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 31
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,10 +28,11 @@ android {
         applicationId = "com.example.party_minimap"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 20
+        targetSdk = 30
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["MAP_API_KEY"] = mapApiKey
     }
 
     buildTypes {
