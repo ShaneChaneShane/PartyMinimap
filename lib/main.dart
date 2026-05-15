@@ -1,4 +1,6 @@
 // https://www.geeksforgeeks.org/flutter/how-to-get-users-current-location-on-google-maps-in-flutter/
+// https://fernandoptr.medium.com/how-to-get-users-current-location-address-in-flutter-geolocator-geocoding-be563ad6f66a
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -37,6 +39,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Position? _currentPosition;
   Completer<GoogleMapController> _controller = Completer();
   // on below line we have specified camera position
   static final CameraPosition _kGoogle = const CameraPosition(
@@ -52,17 +55,55 @@ class _HomePageState extends State<HomePage> {
       infoWindow: InfoWindow(title: 'My Position'),
     ),
   ];
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Location services are disabled. Please enable the services',
+          ),
+        ),
+      );
+      return false;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permissions are denied')),
+        );
+        return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Location permissions are permanently denied, we cannot request permissions.',
+          ),
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
 
   // created method for getting user current location
-  Future<Position> getUserCurrentLocation() async {
-    await Geolocator.requestPermission().then((value) {}).onError((
-      error,
-      stackTrace,
-    ) async {
-      await Geolocator.requestPermission();
-      print("ERROR" + error.toString());
-    });
-    return await Geolocator.getCurrentPosition();
+  Future<void> getUserCurrentLocation() async {
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) return;
+    await Geolocator.getCurrentPosition()
+        .then((Position position) {
+          setState(() => _currentPosition = position);
+        })
+        .catchError((e) {
+          debugPrint(e);
+        });
   }
 
   @override
@@ -98,20 +139,30 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           getUserCurrentLocation().then((value) async {
-            print(value.latitude.toString() + " " + value.longitude.toString());
+            print(
+              _currentPosition!.latitude.toString() +
+                  " " +
+                  _currentPosition!.longitude.toString(),
+            );
 
             // marker added for current users location
             _markers.add(
               Marker(
                 markerId: MarkerId("2"),
-                position: LatLng(value.latitude, value.longitude),
+                position: LatLng(
+                  _currentPosition!.latitude,
+                  _currentPosition!.longitude,
+                ),
                 infoWindow: InfoWindow(title: 'My Current Location'),
               ),
             );
 
             // specified current users location
             CameraPosition cameraPosition = new CameraPosition(
-              target: LatLng(value.latitude, value.longitude),
+              target: LatLng(
+                _currentPosition!.latitude,
+                _currentPosition!.longitude,
+              ),
               zoom: 14,
             );
 
