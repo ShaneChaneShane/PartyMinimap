@@ -107,24 +107,29 @@ class _MapPageState extends State<MapPage> {
   Future<bool> _handleLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
+      debugPrint("service is disabled. Requesting permissions");
       permission = await Geolocator.requestPermission();
-      if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enable location service')),
-      );
-      return Future.error('Location permissions are denied');
+      if (permission == LocationPermission.denied) {
+        if (!mounted) return false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Location permissions are denied. Please allow location permissions.',
+            ),
+          ),
+        );
+        return Future.error('Location permissions are denied');
+      }
     }
-
     if (permission == LocationPermission.deniedForever) {
       if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Location permissions are permanently denied, we cannot request permissions.',
+            'Location permissions are denied. Please allow location permissions.',
           ),
         ),
       );
-      if (!context.mounted) return false;
       return Future.error(
         'Location permissions are permanently denied, we cannot request permissions.',
       );
@@ -141,6 +146,13 @@ class _MapPageState extends State<MapPage> {
         setState(() => _currentPosition = position);
       });
     } catch (e) {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enable location service')),
+        );
+      }
       debugPrint(e.toString());
     }
   }
