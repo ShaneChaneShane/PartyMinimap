@@ -28,17 +28,18 @@ class _MapPageState extends State<MapPage> {
     ),
   ];
 
-  Future<BitmapDescriptor> getMarkerIcon(String imagePath, Size size) async {
+  Future<BitmapDescriptor> getMarkerIcon(
+    String imagePath,
+    Size size,
+    Color shadowColor,
+  ) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
 
     final Radius radius = Radius.circular(size.width / 2);
-
-    final Paint tagPaint = Paint()..color = Colors.blue;
-    final double tagWidth = 40.0;
-
-    final Paint shadowPaint = Paint()..color = Colors.blue.withAlpha(100);
-    final double shadowWidth = 15.0;
+    final Paint shadowPaint = Paint()..color = shadowColor.withAlpha(100);
+    // = Colors.blue.withAlpha(100);
+    final double shadowWidth = 7.0;
 
     final Paint borderPaint = Paint()..color = Colors.white;
     final double borderWidth = 3.0;
@@ -74,34 +75,6 @@ class _MapPageState extends State<MapPage> {
       borderPaint,
     );
 
-    // Add tag circle
-    canvas.drawRRect(
-      RRect.fromRectAndCorners(
-        Rect.fromLTWH(size.width - tagWidth, 0.0, tagWidth, tagWidth),
-        topLeft: radius,
-        topRight: radius,
-        bottomLeft: radius,
-        bottomRight: radius,
-      ),
-      tagPaint,
-    );
-
-    // Add tag text
-    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-    textPainter.text = TextSpan(
-      text: '1',
-      style: TextStyle(fontSize: 20.0, color: Colors.white),
-    );
-
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        size.width - tagWidth / 2 - textPainter.width / 2,
-        tagWidth / 2 - textPainter.height / 2,
-      ),
-    );
-
     // Oval for the image
     Rect oval = Rect.fromLTWH(
       imageOffset,
@@ -132,31 +105,18 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<bool> _handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Location services are disabled. Please enable the services',
-          ),
-        ),
-      );
-      return false;
-    }
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permissions are denied')),
-        );
-        return false;
-      }
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enable location service')),
+      );
+      return Future.error('Location permissions are denied');
     }
+
     if (permission == LocationPermission.deniedForever) {
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -164,21 +124,25 @@ class _MapPageState extends State<MapPage> {
           ),
         ),
       );
-      return false;
+      if (!context.mounted) return false;
+      return Future.error(
+        'Location permissions are permanently denied, we cannot request permissions.',
+      );
     }
     return true;
   }
 
   Future<void> getUserCurrentLocation() async {
-    final hasPermission = await _handleLocationPermission();
-    if (!hasPermission) return;
-    await Geolocator.getCurrentPosition()
-        .then((Position position) {
-          setState(() => _currentPosition = position);
-        })
-        .catchError((e) {
-          debugPrint(e);
-        });
+    try {
+      await _handleLocationPermission();
+      await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(accuracy: LocationAccuracy.best),
+      ).then((Position position) {
+        setState(() => _currentPosition = position);
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
   @override
@@ -192,8 +156,9 @@ class _MapPageState extends State<MapPage> {
           markers: Set<Marker>.of(_markers),
           // map type
           mapType: MapType.normal,
-          myLocationEnabled: false,
+          myLocationEnabled: true,
           compassEnabled: true,
+          indoorViewEnabled: true,
           // set controller on map complete
           onMapCreated: (GoogleMapController controller) {
             _controller.complete(controller);
@@ -204,7 +169,7 @@ class _MapPageState extends State<MapPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           getUserCurrentLocation().then((value) async {
-            print(
+            debugPrint(
               "${_currentPosition!.latitude.toString()} ${_currentPosition!.longitude.toString()}",
             );
 
@@ -216,9 +181,11 @@ class _MapPageState extends State<MapPage> {
                   _currentPosition!.latitude,
                   _currentPosition!.longitude,
                 ),
+                anchor: const Offset(0.5, 0.5),
                 icon: await getMarkerIcon(
                   "assets/userIconTest.png",
-                  Size(100.0, 100.0),
+                  Size(50.0, 50.0),
+                  Colors.purple.shade400,
                 ),
                 infoWindow: InfoWindow(title: 'My Current Location'),
               ),
