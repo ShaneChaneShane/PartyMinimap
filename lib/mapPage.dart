@@ -16,6 +16,17 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   Position? _currentPosition;
   final Completer<GoogleMapController> _controller = Completer();
+  static final CameraPosition _kGoogle = const CameraPosition(
+    target: LatLng(20.42796133580664, 80.885749655962),
+    zoom: 14.4746,
+  );
+  final List<Marker> _markers = <Marker>[
+    Marker(
+      markerId: MarkerId('1'),
+      position: LatLng(20.42796133580664, 75.885749655962),
+      infoWindow: InfoWindow(title: 'My Position'),
+    ),
+  ];
 
   Future<BitmapDescriptor> getMarkerIcon(String imagePath, Size size) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
@@ -120,20 +131,6 @@ class _MapPageState extends State<MapPage> {
     return BitmapDescriptor.bytes(uint8List);
   }
 
-  // camera position
-  static final CameraPosition _kGoogle = const CameraPosition(
-    target: LatLng(20.42796133580664, 80.885749655962),
-    zoom: 14.4746,
-  );
-
-  // the list of markers
-  final List<Marker> _markers = <Marker>[
-    Marker(
-      markerId: MarkerId('1'),
-      position: LatLng(20.42796133580664, 75.885749655962),
-      infoWindow: InfoWindow(title: 'My Position'),
-    ),
-  ];
   Future<bool> _handleLocationPermission() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -172,7 +169,6 @@ class _MapPageState extends State<MapPage> {
     return true;
   }
 
-  // getting user current location
   Future<void> getUserCurrentLocation() async {
     final hasPermission = await _handleLocationPermission();
     if (!hasPermission) return;
@@ -189,19 +185,16 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        // on below line creating google maps
+        // creating google maps
         child: GoogleMap(
-          // on below line setting camera position
           initialCameraPosition: _kGoogle,
-          // on below line we are setting markers on the map
+          // markers on the map
           markers: Set<Marker>.of(_markers),
-          // on below line specifying map type.
+          // map type
           mapType: MapType.normal,
-          // on below line setting user location enabled.
-          myLocationEnabled: true,
-          // on below line setting compass enabled.
+          myLocationEnabled: false,
           compassEnabled: true,
-          // on below line specifying controller on map complete.
+          // set controller on map complete
           onMapCreated: (GoogleMapController controller) {
             _controller.complete(controller);
           },
@@ -237,9 +230,8 @@ class _MapPageState extends State<MapPage> {
                 _currentPosition!.latitude,
                 _currentPosition!.longitude,
               ),
-              zoom: 14,
+              zoom: 15,
             );
-
             final GoogleMapController controller = await _controller.future;
             controller.animateCamera(
               CameraUpdate.newCameraPosition(cameraPosition),
@@ -247,7 +239,7 @@ class _MapPageState extends State<MapPage> {
             setState(() {});
           });
         },
-        child: Icon(Icons.center_focus_strong_rounded),
+        child: Icon(Icons.gps_fixed),
       ),
     );
   }
