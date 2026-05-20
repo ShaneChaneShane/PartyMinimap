@@ -32,7 +32,6 @@ class _MapPageState extends State<MapPage> {
 
     final Radius radius = Radius.circular(size.width / 2);
     final Paint shadowPaint = Paint()..color = shadowColor.withAlpha(100);
-    // = Colors.blue.withAlpha(100);
     final double shadowWidth = 7.0;
 
     final Paint borderPaint = Paint()..color = Colors.white;
@@ -77,13 +76,43 @@ class _MapPageState extends State<MapPage> {
       size.height - (imageOffset * 2),
     );
 
-    // Add path for oval image
-    canvas.clipPath(Path()..addOval(oval));
+    // for test
+    // canvas.clipPath(Path()..addOval(oval));
+    // TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
+    // painter.text = TextSpan(
+    //   text: 'Hello world',
+    //   style: TextStyle(
+    //     fontSize: 10.0,
+    //     color: const Color.fromARGB(255, 0, 0, 0),
+    //   ),
+    // );
+    // painter.layout();
+    // painter.paint(
+    //   canvas,
+    //   Offset(
+    //     (size.width * 0.5) - painter.width * 0.5,
+    //     (size.height * 0.5) - painter.height * 0.5,
+    //   ),
+    // );
+    // final img = await pictureRecorder.endRecording().toImage(
+    //   size.width.toInt(),
+    //   size.height.toInt(),
+    // );
+    // final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    // return BitmapDescriptor.bytes(data!.buffer.asUint8List());
 
     // Add image
     ui.Image image = await getImageFromPath(imagePath);
-    paintImage(canvas: canvas, image: image, rect: oval, fit: BoxFit.fitWidth);
+    paintImage(
+      canvas: canvas,
+      image: image,
+      rect: oval,
+      fit: BoxFit.fitWidth,
+      filterQuality: FilterQuality.high,
+      isAntiAlias: true,
+    );
 
+    // canvas.scale(MediaQuery.of(context).devicePixelRatio);
     // Convert canvas to image
     final ui.Image markerAsImage = await pictureRecorder.endRecording().toImage(
       size.width.toInt(),
@@ -96,6 +125,11 @@ class _MapPageState extends State<MapPage> {
     );
     final Uint8List uint8List = byteData!.buffer.asUint8List();
     return BitmapDescriptor.bytes(uint8List);
+    // for test
+    // return BitmapDescriptor.asset(
+    //   ImageConfiguration(devicePixelRatio: 0.2),
+    //   imagePath,
+    // );
   }
 
   Future<bool> _handleLocationPermission() async {
@@ -231,7 +265,7 @@ class _MapPageState extends State<MapPage> {
                 anchor: const Offset(0.5, 0.5),
                 icon: await getMarkerIcon(
                   "assets/userIconTest.png",
-                  Size(50.0, 50.0),
+                  Size(150.0, 150.0),
                   Colors.purple.shade400,
                 ),
                 infoWindow: InfoWindow(title: 'My Current Location'),
