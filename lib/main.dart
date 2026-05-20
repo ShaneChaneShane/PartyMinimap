@@ -3,7 +3,7 @@
 // https://stackoverflow.com/questions/56597739/how-to-customize-google-maps-marker-icon-in-flutter
 
 import 'package:flutter/material.dart';
-import 'mapPage.dart';
+import 'map_page.dart';
 
 void main() {
   runApp(const MainApp());
