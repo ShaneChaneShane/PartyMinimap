@@ -18,8 +18,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       // title of the app
       title: 'Party Minimap',
-      // hiding debug banner
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: true,
       theme: ThemeData(
         // theme
         primarySwatch: Colors.purple,

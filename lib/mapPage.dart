@@ -20,13 +20,7 @@ class _MapPageState extends State<MapPage> {
     target: LatLng(20.42796133580664, 80.885749655962),
     zoom: 14.4746,
   );
-  final List<Marker> _markers = <Marker>[
-    Marker(
-      markerId: MarkerId('1'),
-      position: LatLng(20.42796133580664, 75.885749655962),
-      infoWindow: InfoWindow(title: 'My Position'),
-    ),
-  ];
+  final List<Marker> _markers = <Marker>[];
 
   Future<BitmapDescriptor> getMarkerIcon(
     String imagePath,
@@ -158,6 +152,47 @@ class _MapPageState extends State<MapPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    getMarkerIcon(
+      "assets/userIconTest.png",
+      Size(50.0, 50.0),
+      Colors.yellow.shade400,
+    ).then((marker) {
+      setState(() {
+        _markers.add(
+          Marker(
+            markerId: MarkerId('0'),
+            position: LatLng(13.880977, 100.455574),
+            anchor: const Offset(0.5, 0.5),
+            icon: marker,
+            infoWindow: InfoWindow(title: 'Test Position 1'),
+          ),
+        );
+      });
+    });
+
+    getMarkerIcon(
+      "assets/userIconTest.png",
+      Size(50.0, 50.0),
+      Colors.blue.shade400,
+    ).then((marker) {
+      setState(() {
+        _markers.add(
+          Marker(
+            markerId: MarkerId('1'),
+            position: LatLng(13.879441, 100.455692),
+            anchor: const Offset(0.5, 0.5),
+            icon: marker,
+            infoWindow: InfoWindow(title: 'Test Position 2'),
+          ),
+        );
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -204,7 +239,7 @@ class _MapPageState extends State<MapPage> {
             );
 
             // specified current users location
-            CameraPosition cameraPosition = new CameraPosition(
+            CameraPosition cameraPosition = CameraPosition(
               target: LatLng(
                 _currentPosition!.latitude,
                 _currentPosition!.longitude,
