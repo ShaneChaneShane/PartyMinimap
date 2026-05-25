@@ -1,19 +1,93 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:party_minimap/location.dart';
 import 'dart:ui' as ui;
 import 'utils.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class MapModel {
+  final db = FirebaseFirestore.instance;
+  Future<List<LatLng>> getFriendsLocations() async {
+    final List<LatLng> friendsLocations = [];
+    try {
+      final querySnapshot = await db
+          .collection("testLocation")
+          .withConverter(
+            fromFirestore: Location.fromFirestore,
+            toFirestore: (Location location, _) => location.toFirestore(),
+          )
+          .get();
+
+      debugPrint("Successfully get testLocation from firestore");
+      for (var docSnapshot in querySnapshot.docs) {
+        debugPrint("${docSnapshot.id} => ${docSnapshot.data()}");
+        Location location = docSnapshot.data();
+
+        if (location.pos?.latitude != null && location.pos?.longitude != null) {
+          friendsLocations.add(
+            LatLng(location.pos!.latitude, location.pos!.longitude),
+          );
+          debugPrint(
+            "Adding friends' location succeeded. The location from firestore is $location",
+          );
+        } else {
+          debugPrint(
+            "Adding friends' location failed. The location from firestore is empty, = $location",
+          );
+        }
+      }
+      return friendsLocations;
+    } catch (e) {
+      debugPrint("Error getting testLocation from firestore: $e");
+      rethrow;
+    }
+  }
+}
+
+class MapViewModel extends ChangeNotifier {
+  final MapModel model;
+  List<LatLng>? friendsLocations;
+  String? errorMessage;
+  bool loading = false;
+
+  MapViewModel(this.model) {
+    getFriendsLocations();
+  }
+
+  Future<void> getFriendsLocations() async {
+    loading = true;
+    notifyListeners();
+    try {
+      friendsLocations = await model.getFriendsLocations();
+      debugPrint("Friends' Location loaded: ${friendsLocations!.toString()}");
+      errorMessage = null;
+    } on FirebaseException catch (error) {
+      debugPrint("Error loading friends' locations: ${error.message}");
+      errorMessage = error.message;
+      friendsLocations = null;
+    } catch (error) {
+      debugPrint("Unknown error loading friends' locations: $error");
+      errorMessage = error.toString();
+      friendsLocations = null;
+    }
+
+    loading = false;
+    notifyListeners();
+  }
+}
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
   @override
-  State<MapPage> createState() => _MapPageState();
+  State<MapPage> createState() => _MapState();
 }
 
-class _MapPageState extends State<MapPage> {
+class _MapState extends State<MapPage> {
   Position? _currentPosition;
   final Completer<GoogleMapController> _controller = Completer();
   static final CameraPosition _kGoogle = const CameraPosition(
@@ -21,6 +95,8 @@ class _MapPageState extends State<MapPage> {
     zoom: 14.4746,
   );
   final List<Marker> _markers = <Marker>[];
+
+  final viewModel = MapViewModel(MapModel());
 
   Future<BitmapDescriptor> getMarkerIcon(
     String imagePath,
@@ -192,24 +268,6 @@ class _MapPageState extends State<MapPage> {
     getMarkerIcon(
       "assets/userIconTest.png",
       Size(50.0, 50.0),
-      Colors.yellow.shade400,
-    ).then((marker) {
-      setState(() {
-        _markers.add(
-          Marker(
-            markerId: MarkerId('0'),
-            position: LatLng(13.880977, 100.455574),
-            anchor: const Offset(0.5, 0.5),
-            icon: marker,
-            infoWindow: InfoWindow(title: 'Test Position 1'),
-          ),
-        );
-      });
-    });
-
-    getMarkerIcon(
-      "assets/userIconTest.png",
-      Size(50.0, 50.0),
       Colors.blue.shade400,
     ).then((marker) {
       setState(() {
@@ -219,7 +277,7 @@ class _MapPageState extends State<MapPage> {
             position: LatLng(13.879441, 100.455692),
             anchor: const Offset(0.5, 0.5),
             icon: marker,
-            infoWindow: InfoWindow(title: 'Test Position 2'),
+            infoWindow: InfoWindow(title: 'Test Position'),
           ),
         );
       });
@@ -230,19 +288,61 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        // creating google maps
-        child: GoogleMap(
-          initialCameraPosition: _kGoogle,
-          // markers on the map
-          markers: Set<Marker>.of(_markers),
-          // map type
-          mapType: MapType.normal,
-          myLocationEnabled: true,
-          compassEnabled: true,
-          indoorViewEnabled: true,
-          // set controller on map complete
-          onMapCreated: (GoogleMapController controller) {
-            _controller.complete(controller);
+        child: ListenableBuilder(
+          listenable: viewModel,
+          builder: (context, child) {
+            return switch ((
+              viewModel.loading,
+              viewModel.friendsLocations,
+              viewModel.errorMessage,
+            )) {
+              (true, _, _) => Center(child: CircularProgressIndicator()),
+              (false, _, String message) => Center(
+                child: Text("An error has occurred. $message"),
+              ),
+              (false, null, null) => Center(
+                child: Text("An unknown error has occurred"),
+              ),
+              (false, List<LatLng> locations, null) => () {
+                // FOR TEST
+                int i = 3;
+                for (LatLng? pos in locations) {
+                  if (pos != null) {
+                    getMarkerIcon(
+                      "assets/userIconTest.png",
+                      Size(50.0, 50.0),
+                      Colors.orange.shade400,
+                    ).then((marker) {
+                      _markers.add(
+                        Marker(
+                          markerId: MarkerId("$i"),
+                          position: pos,
+                          anchor: const Offset(0.5, 0.5),
+                          icon: marker,
+                          infoWindow: InfoWindow(title: 'TEST FIRESTORE #$i'),
+                        ),
+                      );
+                      i++;
+                    });
+                  }
+                }
+
+                return GoogleMap(
+                  initialCameraPosition: _kGoogle,
+                  // markers on the map
+                  markers: Set<Marker>.of(_markers),
+                  // map type
+                  mapType: MapType.normal,
+                  myLocationEnabled: true,
+                  compassEnabled: true,
+                  indoorViewEnabled: true,
+                  // set controller on map complete
+                  onMapCreated: (GoogleMapController controller) {
+                    _controller.complete(controller);
+                  },
+                );
+              }(),
+            };
           },
         ),
       ),
@@ -250,6 +350,11 @@ class _MapPageState extends State<MapPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           getUserCurrentLocation().then((value) async {
+            if (_currentPosition == null) {
+              debugPrint("Current position is still null");
+              return;
+            }
+
             debugPrint(
               "${_currentPosition!.latitude.toString()} ${_currentPosition!.longitude.toString()}",
             );
@@ -265,7 +370,7 @@ class _MapPageState extends State<MapPage> {
                 anchor: const Offset(0.5, 0.5),
                 icon: await getMarkerIcon(
                   "assets/userIconTest.png",
-                  Size(150.0, 150.0),
+                  Size(50.0, 50.0),
                   Colors.purple.shade400,
                 ),
                 infoWindow: InfoWindow(title: 'My Current Location'),

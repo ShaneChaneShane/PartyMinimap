@@ -7,6 +7,8 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  cloud_firestore: ^6.4.1
+  firebase_core: ^4.9.0
   flutter:
     sdk: flutter
   geolocator: ^14.0.2
