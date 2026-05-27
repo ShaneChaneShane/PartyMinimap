@@ -28,7 +28,7 @@ class MainApp extends StatelessWidget {
         primarySwatch: Colors.purple,
       ),
       // First screen
-      home: MapPage(),
+      home: MapView(),
     );
   }
 }
