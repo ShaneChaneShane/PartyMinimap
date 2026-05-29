@@ -68,6 +68,7 @@ class MapViewModel extends ChangeNotifier {
     isLoading = true;
     model.getFriendsLocationsStream().listen((friendsLocationsList) {
       friendsLocations = friendsLocationsList;
+      isLoading = false;
       notifyListeners();
     });
   }
